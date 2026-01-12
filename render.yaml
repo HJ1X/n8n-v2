@@ -5,34 +5,23 @@ services:
   - type: web
     name: n8n-main
     runtime: docker
-    dockerfilePath: ./Dockerfile.main   # Uses the Main image
+    dockerfilePath: ./Dockerfile.main
     plan: free
     envVars:
       - key: N8N_PORT
         value: 5678
-      - key: WEBHOOK_URL
-        fromService:
-          type: web
-          name: n8n-main
-          property: url
-      # ENABLE BROKER (Server)
       - key: N8N_RUNNERS_ENABLED
         value: true
       - key: N8N_RUNNERS_MODE
         value: external
       - key: N8N_RUNNERS_BROKER_PORT
         value: 5679
-      # THIS IS THE FIX FOR YOUR CONNECTION ISSUE:
       - key: N8N_RUNNERS_BROKER_LISTEN_ADDRESS
         value: 0.0.0.0
       - key: N8N_RUNNERS_AUTH_TOKEN
         generateValue: true
       - key: N8N_SECURE_COOKIE
         value: false
-    disk:
-      name: n8n-data
-      mountPath: /home/node/.n8n
-      sizeGB: 1
 
   # -------------------------------------------------------
   # 2. RUNNER INSTANCE
@@ -40,12 +29,11 @@ services:
   - type: pserv
     name: n8n-runner
     runtime: docker
-    dockerfilePath: ./Dockerfile.runner  # Uses the Runner image
+    dockerfilePath: ./Dockerfile.runner
     plan: starter
     envVars:
       - key: N8N_RUNNERS_ENABLED
         value: true
-      # POINT TO THE INTERNAL PORT 5679 (Not 5678!)
       - key: N8N_RUNNERS_TASK_BROKER_URI
         value: http://n8n-main:5679
       - key: N8N_RUNNERS_AUTH_TOKEN
