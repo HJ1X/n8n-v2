@@ -1,12 +1,12 @@
 services:
   # -------------------------------------------------------
-  # 1. MAIN INSTANCE (Web Interface & Broker)
+  # 1. MAIN INSTANCE
   # -------------------------------------------------------
   - type: web
     name: n8n-main
     runtime: docker
-    dockerFilePath: ./Dockerfile
-    plan: starter  # 'free' tier might not have enough RAM for n8n
+    dockerFilePath: ./Dockerfile.main   # Uses the Main image
+    plan: free
     envVars:
       - key: N8N_PORT
         value: 5678
@@ -15,42 +15,39 @@ services:
           type: web
           name: n8n-main
           property: url
-      # ENABLE TASK RUNNERS & BROKER
+      # ENABLE BROKER (Server)
       - key: N8N_RUNNERS_ENABLED
         value: true
       - key: N8N_RUNNERS_MODE
         value: external
       - key: N8N_RUNNERS_BROKER_PORT
         value: 5679
-      # CRITICAL FIX: Listen on 0.0.0.0 so the runner can connect via private network
+      # THIS IS THE FIX FOR YOUR CONNECTION ISSUE:
       - key: N8N_RUNNERS_BROKER_LISTEN_ADDRESS
         value: 0.0.0.0
       - key: N8N_RUNNERS_AUTH_TOKEN
         generateValue: true
-      # SECURE COOKIES (Required for Render https)
       - key: N8N_SECURE_COOKIE
-        value: false # Set to true if you have a custom domain with SSL, otherwise false prevents login loops on .onrender.com
+        value: false
     disk:
       name: n8n-data
       mountPath: /home/node/.n8n
       sizeGB: 1
 
   # -------------------------------------------------------
-  # 2. RUNNER INSTANCE (Executes Python/JS Code)
+  # 2. RUNNER INSTANCE
   # -------------------------------------------------------
-  - type: pserv # Private Service (Not accessible from public internet)
+  - type: pserv
     name: n8n-runner
     runtime: docker
-    dockerFilePath: ./Dockerfile
+    dockerFilePath: ./Dockerfile.runner  # Uses the Runner image
     plan: starter
     envVars:
       - key: N8N_RUNNERS_ENABLED
         value: true
-      # Connect to Main Instance (Broker)
-      # CRITICAL FIX: Use the internal service name 'n8n-main' and port 5679
+      # POINT TO THE INTERNAL PORT 5679 (Not 5678!)
       - key: N8N_RUNNERS_TASK_BROKER_URI
         value: http://n8n-main:5679
-      # Sync the Auth Token from the main service
       - key: N8N_RUNNERS_AUTH_TOKEN
         fromService:
           type: web
