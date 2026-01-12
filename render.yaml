@@ -1,43 +1,33 @@
 services:
-  # -------------------------------------------------------
-  # 1. MAIN INSTANCE
-  # -------------------------------------------------------
   - type: web
-    name: n8n-main
+    name: n8n-v2-monolith
     runtime: docker
-    dockerfilePath: ./Dockerfile.main
+    dockerFilePath: ./Dockerfile
     plan: free
     envVars:
       - key: N8N_PORT
         value: 5678
+      
+      # --- Runner Configuration ---
       - key: N8N_RUNNERS_ENABLED
         value: true
+      # We tell n8n to listen for runners (External Mode)
       - key: N8N_RUNNERS_MODE
         value: external
+      # Listen on localhost is fine here since the runner is in the same container
+      - key: N8N_RUNNERS_BROKER_LISTEN_ADDRESS
+        value: 127.0.0.1
       - key: N8N_RUNNERS_BROKER_PORT
         value: 5679
-      - key: N8N_RUNNERS_BROKER_LISTEN_ADDRESS
-        value: 0.0.0.0
+
+      # Shared Secret (Main instance and Runner use the same token)
       - key: N8N_RUNNERS_AUTH_TOKEN
+        generateValue: true
+      
+      # --- Standard n8n Config ---
+      - key: N8N_ENCRYPTION_KEY
         generateValue: true
       - key: N8N_SECURE_COOKIE
         value: false
-
-  # -------------------------------------------------------
-  # 2. RUNNER INSTANCE
-  # -------------------------------------------------------
-  - type: pserv
-    name: n8n-runner
-    runtime: docker
-    dockerfilePath: ./Dockerfile.runner
-    plan: starter
-    envVars:
-      - key: N8N_RUNNERS_ENABLED
+      - key: N8N_COMMUNITY_PACKAGES_ENABLED
         value: true
-      - key: N8N_RUNNERS_TASK_BROKER_URI
-        value: http://n8n-main:5679
-      - key: N8N_RUNNERS_AUTH_TOKEN
-        fromService:
-          type: web
-          name: n8n-main
-          envVarKey: N8N_RUNNERS_AUTH_TOKEN
