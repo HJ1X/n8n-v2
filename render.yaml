@@ -1,0 +1,58 @@
+services:
+  # -------------------------------------------------------
+  # 1. MAIN INSTANCE (Web Interface & Broker)
+  # -------------------------------------------------------
+  - type: web
+    name: n8n-main
+    runtime: docker
+    dockerFilePath: ./Dockerfile
+    plan: starter  # 'free' tier might not have enough RAM for n8n
+    envVars:
+      - key: N8N_PORT
+        value: 5678
+      - key: WEBHOOK_URL
+        fromService:
+          type: web
+          name: n8n-main
+          property: url
+      # ENABLE TASK RUNNERS & BROKER
+      - key: N8N_RUNNERS_ENABLED
+        value: true
+      - key: N8N_RUNNERS_MODE
+        value: external
+      - key: N8N_RUNNERS_BROKER_PORT
+        value: 5679
+      # CRITICAL FIX: Listen on 0.0.0.0 so the runner can connect via private network
+      - key: N8N_RUNNERS_BROKER_LISTEN_ADDRESS
+        value: 0.0.0.0
+      - key: N8N_RUNNERS_AUTH_TOKEN
+        generateValue: true
+      # SECURE COOKIES (Required for Render https)
+      - key: N8N_SECURE_COOKIE
+        value: false # Set to true if you have a custom domain with SSL, otherwise false prevents login loops on .onrender.com
+    disk:
+      name: n8n-data
+      mountPath: /home/node/.n8n
+      sizeGB: 1
+
+  # -------------------------------------------------------
+  # 2. RUNNER INSTANCE (Executes Python/JS Code)
+  # -------------------------------------------------------
+  - type: pserv # Private Service (Not accessible from public internet)
+    name: n8n-runner
+    runtime: docker
+    dockerFilePath: ./Dockerfile
+    plan: starter
+    envVars:
+      - key: N8N_RUNNERS_ENABLED
+        value: true
+      # Connect to Main Instance (Broker)
+      # CRITICAL FIX: Use the internal service name 'n8n-main' and port 5679
+      - key: N8N_RUNNERS_TASK_BROKER_URI
+        value: http://n8n-main:5679
+      # Sync the Auth Token from the main service
+      - key: N8N_RUNNERS_AUTH_TOKEN
+        fromService:
+          type: web
+          name: n8n-main
+          envVarKey: N8N_RUNNERS_AUTH_TOKEN
