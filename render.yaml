@@ -30,7 +30,7 @@ services:
     name: n8n-runner
     runtime: docker
     dockerfilePath: ./Dockerfile.runner
-    plan: free
+    plan: starter
     envVars:
       - key: N8N_RUNNERS_ENABLED
         value: true
