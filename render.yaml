@@ -4,7 +4,8 @@ services:
   # 1. The Main n8n Instance (Web Service)
   - type: web
     name: n8n-main
-    image: docker.io/n8nio/n8n:2.0.3
+    image: 
+      url: docker.io/n8nio/n8n:2.0.3
     env: docker
     plan: starter
     disk:
@@ -34,7 +35,8 @@ services:
   # 2. The Runners (Private Service)
   - type: pserv
     name: n8n-runners
-    image: docker.io/n8nio/runners:2.0.3
+    image: 
+      url: docker.io/n8nio/runners:2.0.3
     env: docker
     plan: starter
     envVars:
